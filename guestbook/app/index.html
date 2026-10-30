@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Guestbook - v1</title>
+  <style>
+    body { font-family: system-ui, sans-serif; max-width: 720px; margin: 4rem auto; padding: 0 1rem; }
+    h1 { color: #2457a7; }
+    input, button { padding: .65rem; margin: .25rem 0; }
+    li { padding: .4rem 0; border-bottom: 1px solid #ddd; }
+  </style>
+</head>
+<body>
+  <h1>Guestbook - v1</h1>
+  <p>Welcome. Leave a message in the guestbook.</p>
+  <form id="guestbook-form">
+    <input id="message" type="text" placeholder="Write a message" required>
+    <button type="submit">Sign guestbook</button>
+  </form>
+  <ul id="entries"></ul>
+  <script>
+    const form = document.getElementById('guestbook-form');
+    const message = document.getElementById('message');
+    const entries = document.getElementById('entries');
+    form.addEventListener('submit', (event) => {
+      event.preventDefault();
+      const item = document.createElement('li');
+      item.textContent = message.value;
+      entries.prepend(item);
+      message.value = '';
+    });
+  </script>
+</body>
+</html>
