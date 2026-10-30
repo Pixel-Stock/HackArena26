@@ -1,0 +1,95 @@
+apiVersion: tekton.dev/v1
+kind: Pipeline
+metadata:
+  name: oc-pipelines-oc-final
+spec:
+  params:
+    - name: repo-url
+      type: string
+      description: Git repository URL
+    - name: image
+      type: string
+      description: Destination image reference, including tag
+  workspaces:
+    - name: shared-workspace
+  tasks:
+    - name: cleanup
+      taskRef:
+        name: cleanup
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: git-clone
+      taskRef:
+        name: git-clone
+        params:
+          - name: url
+            value: $(params.repo-url)
+          - name: revision
+            value: main
+          - name: deleteExisting
+            value: "true"
+      workspaces:
+        - name: output
+          workspace: shared-workspace
+      runAfter:
+        - cleanup
+
+    - name: flake8
+      runAfter:
+        - git-clone
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+      taskSpec:
+        workspaces:
+          - name: source
+        steps:
+          - name: lint
+            image: python:3.11-slim
+            workingDir: $(workspaces.source.path)
+            script: |
+              #!/bin/sh
+              set -eu
+              pip install --no-cache-dir flake8
+              flake8 app.py tests
+
+    - name: nose
+      taskRef:
+        name: nose
+      runAfter:
+        - flake8
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: buildah
+      runAfter:
+        - nose
+      taskRef:
+        name: buildah
+      params:
+        - name: IMAGE
+          value: $(params.image)
+        - name: DOCKERFILE
+          value: ./Dockerfile
+        - name: CONTEXT
+          value: .
+        - name: TLSVERIFY
+          value: "true"
+      workspaces:
+        - name: source
+          workspace: shared-workspace
+
+    - name: deploy
+      runAfter:
+        - buildah
+      taskRef:
+        name: openshift-client
+      params:
+        - name: SCRIPT
+          value: |
+            oc new-app --name=ci-cd-final-project $(params.image) --allow-missing-images=true || true
+            oc expose service/ci-cd-final-project --port=8000 || true
+            oc rollout status deployment/ci-cd-final-project
