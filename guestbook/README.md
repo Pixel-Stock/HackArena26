@@ -60,21 +60,16 @@ docker push us.icr.io/<sn-labs-namespace>/guestbook:v2
 
 Save the complete Docker push output, including the final digest line, as `upguestbook`. Save the v2 HTML source as `up-app`.
 
-Update the image in `deployment.yml` to `us.icr.io/<sn-labs-namespace>/guestbook:v2`, then run:
+Update the image in `deployment.yml` to `us.icr.io/<sn-labs-namespace>/guestbook:v2` AND change the Guestbook container CPU request from `10m` to `50m` in the same edit. Apply both changes together so they create one new Deployment revision:
 
 ```sh
-kubectl apply -f deployment.yml
+kubectl apply -f deployment.yml | tee deployment
 kubectl rollout status deployment/guestbook
 kubectl rollout history deployment/guestbook
+kubectl rollout history deployment/guestbook --revision=2 | tee rev
 ```
 
-Save the apply output as `deployment`. For the CPU revision evidence, inspect the relevant revision:
-
-```sh
-kubectl rollout history deployment/guestbook --revision=<revision-number>
-```
-
-Save that actual output as `rev`. If the assignment requires a CPU-related change in the revision, make the CPU resource change in the Deployment, apply it, and capture the resulting revision details.
+If your revision number is not 2, use the revision number shown by `kubectl rollout history`. The revision details should show the v2 image and updated CPU request. The manifest retains one old ReplicaSet so the post-rollback ReplicaSet listing can show the current and previous versions.
 
 ## 5. Roll back and capture ReplicaSets
 
