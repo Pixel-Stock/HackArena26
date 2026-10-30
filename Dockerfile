@@ -1,4 +1,4 @@
-FROM python:3.11-slim
+FROM python:3.9-slim
 
 WORKDIR /opt/app-root/src
 COPY requirements.txt .
